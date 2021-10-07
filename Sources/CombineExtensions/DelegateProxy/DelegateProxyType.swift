@@ -29,6 +29,7 @@
 
   @available(OSX 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
   extension DelegateProxyType where Self: DelegateProxy {
+    @discardableResult
     public static func createDelegateProxy(for object: Object) -> Self {
       objc_sync_enter(self)
       defer { objc_sync_exit(self) }
