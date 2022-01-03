@@ -1,6 +1,5 @@
 import XCTest
 @testable import CombineExtensions
-import AppKit
 
 final class DiscardableSinkTests: XCTestCase {
   func testSinkOnce1() {
