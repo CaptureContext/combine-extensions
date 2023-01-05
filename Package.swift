@@ -29,7 +29,7 @@ let package = Package(
   dependencies: [
     .package(
       url: "https://github.com/pointfreeco/combine-schedulers.git",
-      from: "0.5.2"
+      .upToNextMinor(from: "0.9.1")
     )
   ],
   targets: [
