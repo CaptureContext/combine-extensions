@@ -9,7 +9,7 @@
 #if canImport(Combine)
   import Foundation
 
-  private var associatedKey = "delegateProxy"
+  private var associatedKey: StaticString = "delegateProxy"
 
   public protocol DelegateProxyType {
     associatedtype Object

@@ -1,4 +1,5 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.8
+
 import PackageDescription
 
 let package = Package(
@@ -14,43 +15,32 @@ let package = Package(
       name: "CombineExtensions",
       type: .static,
       targets: ["CombineExtensions"]
-    ),
-    .library(
-      name: "CombineInterception",
-      type: .static,
-      targets: ["CombineInterception"]
-    ),
-    .library(
-      name: "CombineRuntime",
-      type: .static,
-      targets: ["CombineRuntime"]
-    ),
+    )
   ],
   dependencies: [
     .package(
+      url: "https://github.com/capturecontext/combine-interception.git",
+      .upToNextMajor(from: "0.0.1")
+    ),
+    .package(
       url: "https://github.com/pointfreeco/combine-schedulers.git",
-      .upToNextMinor(from: "0.9.1")
-    )
+      .upToNextMajor(from: "1.0.0")
+    ),
   ],
   targets: [
     .target(
       name: "CombineExtensions",
       dependencies: [
-        .target(name: "CombineInterception"),
-        .target(name: "CombineRuntime"),
+        .product(
+          name: "CombineInterception",
+          package: "combine-interception"
+        ),
         .product(
           name: "CombineSchedulers",
           package: "combine-schedulers"
         ),
       ]
     ),
-    .target(
-      name: "CombineInterception",
-      dependencies: [
-        .target(name: "CombineRuntime")
-      ]
-    ),
-    .target(name: "CombineRuntime"),
 
     // ––––––––––––––––––––––– Tests –––––––––––––––––––––––
 
@@ -59,12 +49,6 @@ let package = Package(
       dependencies: [
         .target(name: "CombineExtensions")
       ]
-    ),
-    .testTarget(
-      name: "CombineInterceptionTests",
-      dependencies: [
-        .target(name: "CombineInterception")
-      ]
-    ),
+    )
   ]
 )
