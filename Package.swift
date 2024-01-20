@@ -20,7 +20,7 @@ let package = Package(
   dependencies: [
     .package(
       url: "https://github.com/capturecontext/combine-interception.git",
-      .upToNextMajor(from: "0.0.1")
+      .upToNextMajor(from: "0.1.0")
     ),
     .package(
       url: "https://github.com/pointfreeco/combine-schedulers.git",
