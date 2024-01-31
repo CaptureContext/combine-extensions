@@ -1,62 +1,59 @@
 #if canImport(Combine)
-  import Combine
-  import Foundation
+import Combine
+import Foundation
 
-  @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-  private enum DiscardableSinkStorage {
-    private static let accessQueue = DispatchQueue(
-      label: "DiscardableSinkStorage.accessQueue",
-      qos: .default
-    )
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+private enum DiscardableSinkStorage {
+	private static let accessQueue = DispatchQueue(
+		label: "DiscardableSinkStorage.accessQueue",
+		qos: .default
+	)
 
-    static var cancellables: [AnyHashable: Cancellable] = [:]
+	static var cancellables: [AnyHashable: Cancellable] = [:]
 
-    static func createCancellationID() -> AnyHashable {
-      struct DiscardableSinkCancellationID: Hashable {}
-      return DiscardableSinkCancellationID()
-    }
+	static func capture(_ cancellable: () -> Cancellable) -> Cancellable {
+		struct CancellationID: Hashable {}
+		let cancellationID = CancellationID()
 
-    static func store(_ cancellable: Cancellable, for id: AnyHashable) {
-      accessQueue.sync {
-        cancellables[id] = cancellable
-      }
-    }
+		let innerCancellable = cancellable()
+		store(innerCancellable, for: cancellationID)
+		return NonScopedCancellable { cancel(cancellationID) }
+	}
 
-    static func cancel(_ id: AnyHashable) {
-      accessQueue.sync {
-        cancellables.removeValue(forKey: id)?.cancel()
-      }
-    }
-  }
+	private static func store(_ cancellable: Cancellable, for id: AnyHashable) {
+		accessQueue.sync {
+			cancellables[id] = cancellable
+		}
+	}
 
-  @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-  extension Publisher {
-    @discardableResult
-    public func sinkOnce(
-      onValue: ((Output) -> Void)? = nil,
-      onFailure: ((Failure) -> Void)? = nil,
-      onFinished: (() -> Void)? = nil
-    ) -> Cancellable {
-      let cancellationID = DiscardableSinkStorage.createCancellationID()
+	private static func cancel(_ id: AnyHashable) {
+		accessQueue.sync {
+			cancellables.removeValue(forKey: id)?.cancel()
+		}
+	}
+}
 
-      let innerCancellable = sinkEvents { event in
-        switch event {
-        case let .value(value):
-          onValue?(value)
-        case let .failure(error):
-          onFailure?(error)
-        case .finished:
-          onFinished?()
-        }
-        DiscardableSinkStorage.cancel(cancellationID)
-      }
-
-      DiscardableSinkStorage.store(innerCancellable, for: cancellationID)
-
-      return NonScopedCancellable {
-        DiscardableSinkStorage.cancel(cancellationID)
-      }
-    }
-  }
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+extension Publisher {
+	@discardableResult
+	public func sinkOnce(
+		onValue: ((Output) -> Void)? = nil,
+		onFailure: ((Failure) -> Void)? = nil,
+		onFinished: (() -> Void)? = nil
+	) -> Cancellable {
+		DiscardableSinkStorage.capture {
+			sinkEvents { event in
+				switch event {
+				case let .value(value):
+					onValue?(value)
+				case let .failure(error):
+					onFailure?(error)
+				case .finished:
+					onFinished?()
+				}
+			}
+		}
+	}
+}
 
 #endif
