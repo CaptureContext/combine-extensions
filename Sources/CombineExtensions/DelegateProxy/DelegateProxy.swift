@@ -148,7 +148,7 @@ extension AnyDelegateProxy {
 	}
 }
 
-protocol DelegateProxyType<Delegate>: AnyDelegateProxy {
+public protocol DelegateProxyType<Delegate>: AnyDelegateProxy {
 	associatedtype Delegate: NSObjectProtocol
 	var asDelegate: Delegate { get }
 	var forwardee: Delegate? { get set }
