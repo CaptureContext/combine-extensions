@@ -6,7 +6,7 @@ import CombineSchedulers
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public protocol _PublishSubjectProtocol: Subject {
 	func onCancel(perform action: (() -> Void)?)
-
+	
 	init<S: Subject>(_ subject: S) where S.Output == Output, S.Failure == Failure
 }
 
@@ -14,26 +14,26 @@ public protocol _PublishSubjectProtocol: Subject {
 @propertyWrapper
 public class PublishSubject<Output, Failure: Error>: _PublishSubjectProtocol {
 	fileprivate let subject: AnySubject<Output, Failure>
-
+	
 	private var _onCancel: (() -> Void)? = nil
 	public func onCancel(perform action: (() -> Void)?) {
 		self._onCancel = action
 	}
-
+	
 	public required init<S: Subject>(
 		_ subject: S
 	) where S.Output == Output, S.Failure == Failure {
 		self.subject = subject.eraseToAnySubject()
 	}
-
+	
 	public convenience init(_ initialValue: Output) {
 		self.init(DefaulInnerPublishSubject(initialValue))
 	}
-
+	
 	public convenience init() {
 		self.init(DefaulInnerPublishSubject())
 	}
-
+	
 	public var wrappedValue: AnyPublisher<Output, Failure> {
 		subject.eraseToAnyPublisher()
 	}
@@ -45,7 +45,7 @@ final public class OpenPublishSubject<Value, Failure: Error>: PublishSubject<Val
 	public override var wrappedValue: AnyPublisher<Value, Failure> {
 		get { super.wrappedValue }
 	}
-
+	
 	public var projectedValue: SubjectProxy<Value, Failure> { .init(self) }
 }
 
@@ -54,7 +54,7 @@ extension PublishSubject: Subject {
 	final public func send(_ value: Output) {
 		subject.send(value)
 	}
-
+	
 	final public func send(subscription: Subscription) {
 		subject.send(
 			subscription: subscription.cancellationTracking { [weak self] in
@@ -62,7 +62,7 @@ extension PublishSubject: Subject {
 			}
 		)
 	}
-
+	
 	final public func send(completion: Subscribers.Completion<Failure>) {
 		subject.send(completion: completion)
 	}
@@ -83,23 +83,23 @@ extension PublishSubject: Publisher {
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private class DefaulInnerPublishSubject<Output, Failure: Error>: Subject {
 	let subject: CurrentValueSubject<Output?, Failure>
-
+	
 	init(_ initialValue: Output? = nil) {
 		self.subject = .init(initialValue)
 	}
-
+	
 	func send(_ value: Output) {
 		subject.send(value)
 	}
-
+	
 	func send(completion: Subscribers.Completion<Failure>) {
 		subject.send(completion: completion)
 	}
-
+	
 	func send(subscription: Subscription) {
 		subject.send(subscription: subscription)
 	}
-
+	
 	func receive<S>(subscriber: S) where S: Subscriber, Failure == S.Failure, Output == S.Input {
 		subject.compactMap { $0 }.receive(subscriber: subscriber)
 	}
@@ -110,7 +110,7 @@ extension _PublishSubjectProtocol {
 	public init() {
 		self.init(DefaulInnerPublishSubject())
 	}
-
+	
 	public init<S: Subject>(
 		_ subject: S,
 		handler: (Self) -> Void
@@ -118,7 +118,7 @@ extension _PublishSubjectProtocol {
 		self.init(subject)
 		handler(self)
 	}
-
+	
 	public init(handler: (Self) -> Void) {
 		self.init()
 		handler(self)

@@ -15,12 +15,12 @@ private struct CancelTrackingSubscription: Subscription {
 		self.subscription = subscription
 		self.onCancel = onCancel
 	}
-
+	
 	let subscription: Subscription
 	let onCancel: () -> Void
-
+	
 	let combineIdentifier: CombineIdentifier = .init()
-
+	
 	func request(_ demand: Subscribers.Demand) {
 		subscription.request(demand)
 	}
