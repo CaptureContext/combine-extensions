@@ -16,12 +16,17 @@ let package = Package(
 			name: "CombineExtensions",
 			type: .static,
 			targets: ["CombineExtensions"]
+		),
+		.library(
+			name: "CombineExtensionsMacros",
+			type: .static,
+			targets: ["CombineExtensionsMacros"]
 		)
 	],
 	dependencies: [
 		.package(
 			url: "https://github.com/capturecontext/combine-interception.git",
-			.upToNextMajor(from: "0.2.0")
+			.upToNextMajor(from: "0.3.0")
 		),
 		.package(
 			url: "https://github.com/pointfreeco/combine-schedulers.git",
@@ -42,14 +47,21 @@ let package = Package(
 				),
 			]
 		),
-
-		// ––––––––––––––––––––––– Tests –––––––––––––––––––––––
-
-			.testTarget(
-				name: "CombineExtensionsTests",
-				dependencies: [
-					.target(name: "CombineExtensions")
-				]
-			)
+		.target(
+			name: "CombineExtensionsMacros",
+			dependencies: [
+				.target(name: "CombineExtensions"),
+				.product(
+					name: "CombineInterceptionMacros",
+					package: "combine-interception"
+				),
+			]
+		),
+		.testTarget(
+			name: "CombineExtensionsTests",
+			dependencies: [
+				.target(name: "CombineExtensions"),
+			]
+		),
 	]
 )

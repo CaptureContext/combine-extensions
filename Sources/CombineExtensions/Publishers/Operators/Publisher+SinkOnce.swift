@@ -11,13 +11,15 @@ private enum DiscardableSinkStorage {
 
 	static var cancellables: [AnyHashable: Cancellable] = [:]
 
-	static func capture(_ cancellable: () -> Cancellable) -> Cancellable {
+	static func capture(_ innerCancellable: (Cancellable) -> Cancellable) -> Cancellable {
 		struct CancellationID: Hashable {}
 		let cancellationID = CancellationID()
 
-		let innerCancellable = cancellable()
-		store(innerCancellable, for: cancellationID)
-		return NonScopedCancellable { cancel(cancellationID) }
+		let cancellable = NonScopedCancellable { cancel(cancellationID) }
+
+		store(innerCancellable(cancellable), for: cancellationID)
+
+		return cancellable
 	}
 
 	private static func store(_ cancellable: Cancellable, for id: AnyHashable) {
@@ -41,11 +43,12 @@ extension Publisher {
 		onFailure: ((Failure) -> Void)? = nil,
 		onFinished: (() -> Void)? = nil
 	) -> Cancellable {
-		DiscardableSinkStorage.capture {
+		DiscardableSinkStorage.capture { cancellable in
 			sinkEvents { event in
 				switch event {
 				case let .value(value):
 					onValue?(value)
+					cancellable.cancel()
 				case let .failure(error):
 					onFailure?(error)
 				case .finished:
