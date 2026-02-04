@@ -40,10 +40,17 @@ struct LifetimeTests {
 		
 		await Task.yield()
 
+		// [sometimes] yeild is not enough for some reason
+		try await Task.sleep(for: .milliseconds(100))
+
 		#expect(receivedInvalidated.count == 1)
 		#expect(receivedEnded.value == [false, true])
 
 		await Task.yield()
+
+		// ensure everything is completed since
+		// yield wasnt enough in prev 2 cases
+		try await Task.sleep(for: .milliseconds(100))
 
 		invalidationTask.cancel()
 		hasEndedEventsTask.cancel()
