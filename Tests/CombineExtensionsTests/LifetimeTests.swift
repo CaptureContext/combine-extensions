@@ -8,6 +8,7 @@ struct LifetimeTests {
 	class Object: NSObject {}
 
 	@Test
+	@available(watchOS 9.0, tvOS 16.0, *)
 	func test() async throws {
 		var object: Object! = Object()
 
