@@ -71,6 +71,5 @@ let package = Package(
 				.target(name: "CombineExtensions"),
 			]
 		),
-	],
-	swiftLanguageModes: [.v6]
+	]
 )

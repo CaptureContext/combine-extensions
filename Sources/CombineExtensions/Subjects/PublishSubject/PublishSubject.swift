@@ -3,114 +3,94 @@ import Combine
 import Foundation
 import CombineSchedulers
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public protocol _PublishSubjectProtocol: Subject {
+	@available(*, deprecated, message: "Use cancellation tracking subscribers instead")
 	func onCancel(perform action: (() -> Void)?)
-	
+
 	init<S: Subject>(_ subject: S) where S.Output == Output, S.Failure == Failure
 }
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @propertyWrapper
 public class PublishSubject<Output, Failure: Error>: _PublishSubjectProtocol {
-	fileprivate let subject: AnySubject<Output, Failure>
-	
-	private var _onCancel: (() -> Void)? = nil
-	public func onCancel(perform action: (() -> Void)?) {
-		self._onCancel = action
-	}
+	@usableFromInline
+	internal let subject: any Subject<Output, Failure>
+
+	@usableFromInline
+	internal var _onCancel_DEPRECATED: (() -> Void)? = nil
 	
 	public required init<S: Subject>(
 		_ subject: S
 	) where S.Output == Output, S.Failure == Failure {
-		self.subject = subject.eraseToAnySubject()
+		self.subject = subject
 	}
-	
+
+	@inlinable
 	public convenience init(_ initialValue: Output) {
 		self.init(DefaulInnerPublishSubject(initialValue))
 	}
-	
+
+	@inlinable
 	public convenience init() {
 		self.init(DefaulInnerPublishSubject())
 	}
-	
+
+	@inlinable
 	public var wrappedValue: AnyPublisher<Output, Failure> {
 		subject.eraseToAnyPublisher()
 	}
 }
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @propertyWrapper
-final public class OpenPublishSubject<Value, Failure: Error>: PublishSubject<Value, Failure> {
-	public override var wrappedValue: AnyPublisher<Value, Failure> {
+public final class OpenPublishSubject<Output, Failure: Error>: PublishSubject<Output, Failure> {
+	@inlinable
+	public override var wrappedValue: AnyPublisher<Output, Failure> {
 		get { super.wrappedValue }
 	}
-	
-	public var projectedValue: SubjectProxy<Value, Failure> { .init(self) }
+
+	@inlinable
+	public var projectedValue: SubjectProxy<Output, Failure> { .init(self) }
 }
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension PublishSubject: Subject {
+	@inlinable
 	final public func send(_ value: Output) {
 		subject.send(value)
 	}
-	
+
+	@inlinable
 	final public func send(subscription: Subscription) {
 		subject.send(
 			subscription: subscription.cancellationTracking { [weak self] in
-				self?._onCancel?()
+				self?._onCancel_DEPRECATED?()
 			}
 		)
 	}
-	
+
+	@inlinable
 	final public func send(completion: Subscribers.Completion<Failure>) {
 		subject.send(completion: completion)
 	}
 }
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension PublishSubject: Publisher {
+	@inlinable
 	public func receive<S>(subscriber: S)
 	where Output == S.Input, Failure == S.Failure, S: Subscriber {
 		subject.receive(
 			subscriber: subscriber.cancellationTracking { [weak self] in
-				self?._onCancel?()
+				self?._onCancel_DEPRECATED?()
 			}
 		)
 	}
 }
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-private class DefaulInnerPublishSubject<Output, Failure: Error>: Subject {
-	let subject: CurrentValueSubject<Output?, Failure>
-	
-	init(_ initialValue: Output? = nil) {
-		self.subject = .init(initialValue)
-	}
-	
-	func send(_ value: Output) {
-		subject.send(value)
-	}
-	
-	func send(completion: Subscribers.Completion<Failure>) {
-		subject.send(completion: completion)
-	}
-	
-	func send(subscription: Subscription) {
-		subject.send(subscription: subscription)
-	}
-	
-	func receive<S>(subscriber: S) where S: Subscriber, Failure == S.Failure, Output == S.Input {
-		subject.compactMap { $0 }.receive(subscriber: subscriber)
-	}
-}
-
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension _PublishSubjectProtocol {
+	@inlinable
 	public init() {
 		self.init(DefaulInnerPublishSubject())
 	}
-	
+
+	@inlinable
 	public init<S: Subject>(
 		_ subject: S,
 		handler: (Self) -> Void
@@ -118,7 +98,8 @@ extension _PublishSubjectProtocol {
 		self.init(subject)
 		handler(self)
 	}
-	
+
+	@inlinable
 	public init(handler: (Self) -> Void) {
 		self.init()
 		handler(self)

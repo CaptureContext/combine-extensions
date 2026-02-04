@@ -1,20 +1,36 @@
 #if canImport(Combine)
 import Combine
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Subject {
+	/// Emits 2 events, first one is `output`, second one is `(competion: .finished)`
+	@inlinable
 	public func send(completion: SubjectValueCompletion<Output>) {
 		send(completion.output)
 		send(completion: .finished)
 	}
+
+	/// Sends `output` or `completion` based on given `Sink.Event`
+	public func send(event: Subscribers.Sink<Output, Failure>.Event) {
+		switch event {
+		case let .value(value): send(value)
+		case let .failure(error): send(completion: .failure(error))
+		case .finished: send(completion: .finished)
+		}
+	}
 }
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public struct SubjectValueCompletion<Output> {
-	fileprivate var output: Output
-	
+	@usableFromInline
+	internal var output: Output
+
+	@usableFromInline
+	init(_ output: Output) {
+		self.output = output
+	}
+
+	@inlinable
 	public static func value(_ output: Output) -> SubjectValueCompletion {
-		return SubjectValueCompletion(output: output)
+		return SubjectValueCompletion(output)
 	}
 }
 #endif

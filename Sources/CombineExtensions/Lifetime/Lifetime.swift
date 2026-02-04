@@ -1,18 +1,15 @@
+#if canImport(Combine)
 import Combine
+import Foundation
 
 /// Represents the lifetime of an object, and provides a hook to observe when
 /// the object deinitializes.
-public final class Lifetime {
-	@PublishSubject<Never, Never>(PassthroughSubject())
-	public var publisher
-
-	private let _hasEndedSubject = CurrentValueSubject<Bool, Never>(false)
-
-	public var hasEndedPublisher: some Publisher<Bool, Never> { _hasEndedSubject }
+public final class Lifetime: PublishersProxyProvider {
+	fileprivate var cancellables: Set<AnyCancellable> = []
+	fileprivate let _invalidationSubject = PassthroughSubject<Never, Never>()
+	fileprivate let _hasEndedSubject = CurrentValueSubject<Bool, Never>(false)
 
 	public var hasEnded: Bool { _hasEndedSubject.value  }
-
-	fileprivate var cancellables: Set<AnyCancellable> = []
 
 	/// Initialize a `Lifetime` from a lifetime token, which is expected to be
 	/// associated with an object.
@@ -31,7 +28,7 @@ public final class Lifetime {
 			.store(in: &cancellables)
 
 		token.invalidationPublisher
-			.resend(to: _publisher)
+			.resend(to: _invalidationSubject)
 			.store(in: &cancellables)
 	}
 }
@@ -46,7 +43,7 @@ extension Lifetime {
 	}
 
 	/// A `Lifetime` that has already ended.
-	public static let empty = Lifetime(nil)
+	nonisolated(unsafe) public static let empty = Lifetime(nil)
 }
 
 extension Lifetime {
@@ -98,7 +95,7 @@ extension Publishers {
 			}
 			
 			upstream.receive(subscriber: subscriber)
-			lifetime.publisher
+			lifetime.publishers.invalidation
 				.sinkCompletion { _ in subscriber.receive(completion: .finished) }
 				.store(in: &lifetime.cancellables)
 		}
@@ -110,3 +107,19 @@ extension Publisher {
 		Publishers.LifetimeLimitedPublisher(upstream: self, lifetime: lifetime)
 	}
 }
+
+extension PublishersProxy where Base == Lifetime {
+	public var invalidation: some Publisher<Never, Never> { base._invalidationSubject }
+	public var hasEnded: some Publisher<Bool, Never> { base._hasEndedSubject }
+}
+
+extension Lifetime {
+	@available(*, deprecated, message: "Use `lifetime.publishers.invalidation` instead of `lifetime.publisher`")
+	public var publisher: AnyPublisher<Never, Never> {
+		_invalidationSubject.eraseToAnyPublisher()
+	}
+
+	@available(*, deprecated, message: "Use `lifetime.publishers.hasEnded` instead of `lifetime.hasEndedPublisher`")
+	public var hasEndedPublisher: some Publisher<Bool, Never> { _hasEndedSubject }
+}
+#endif

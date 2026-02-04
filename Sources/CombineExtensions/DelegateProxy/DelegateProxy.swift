@@ -21,16 +21,23 @@ open class AnyDelegateProxy: NSObject {
 	private let lifetime: Lifetime
 	private let originalSetter: (AnyObject) -> Void
 
-	public required init(lifetime: Lifetime, _ originalSetter: @escaping (AnyObject) -> Void) {
+	public required init(
+		lifetime: Lifetime,
+		_ originalSetter: @escaping (AnyObject) -> Void
+	) {
 		self.lifetime = lifetime
 		self.originalSetter = originalSetter
 	}
 
-	public override func forwardingTarget(for selector: Selector!) -> Any? {
+	public override func forwardingTarget(
+		for selector: Selector!
+	) -> Any? {
 		return interceptedSelectors.contains(selector) ? nil : _forwardee
 	}
 
-	public func proxy_intercept(_ selector: Selector) -> some Publisher<InterceptionResult<Any, Any>, Never> {
+	public func proxy_intercept(
+		_ selector: Selector
+	) -> some Publisher<InterceptionResult<Any, Any>, Never> {
 		interceptedSelectors.insert(selector)
 		originalSetter(self)
 		return intercept(selector).limited(to: lifetime)
@@ -44,13 +51,15 @@ open class AnyDelegateProxy: NSObject {
 		return intercept(selector).limited(to: lifetime)
 	}
 
-	public override func responds(to selector: Selector!) -> Bool {
+	public override func responds(
+		to selector: Selector!
+	) -> Bool {
 		if interceptedSelectors.contains(selector) { return true }
 		return (_forwardee?.responds(to: selector) ?? false) || super.responds(to: selector)
 	}
 }
 
-private let hasSwizzledKey = AssociationKey<Bool>(default: false)
+nonisolated(unsafe) private let hasSwizzledKey = AssociationKey<Bool>(default: false)
 
 extension AnyDelegateProxy {
 	// FIXME: This is a workaround to a compiler issue, where any use of `Self`
@@ -60,22 +69,40 @@ extension AnyDelegateProxy {
 	public static func proxy<Delegate: NSObjectProtocol>(
 		for instance: NSObject,
 		protocol: Delegate.Type,
+		selector: any _MutablePropertySelectorProtocol
+	) -> AnyDelegateProxy {
+		return _proxy(
+			for: instance,
+			protocol: `protocol`,
+			getter: selector.getter,
+			setter: selector.setter,
+		)
+	}
+
+	// FIXME: This is a workaround to a compiler issue, where any use of `Self`
+	//        through a protocol would result in the following error messages:
+	//        1. PHI node operands are not the same type as the result!
+	//        2. LLVM ERROR: Broken function found, compilation aborted!
+	@available(*, deprecated, renamed: "proxy(for:protocol:selector:)")
+	public static func proxy<Delegate: NSObjectProtocol>(
+		for instance: NSObject,
+		protocol: Delegate.Type,
 		setter: Selector,
 		getter: Selector
 	) -> AnyDelegateProxy {
 		return _proxy(
 			for: instance,
 			protocol: `protocol`,
+			getter: getter,
 			setter: setter,
-			getter: getter
 		)
 	}
 
 	private static func _proxy<Delegate: NSObjectProtocol>(
 		for instance: NSObject,
 		protocol: Delegate.Type,
-		setter: Selector,
-		getter: Selector
+		getter: Selector,
+		setter: Selector
 	) -> AnyDelegateProxy {
 		return synchronized(instance) {
 			let key = AssociationKey<AnyDelegateProxy?>(setter.delegateProxyAlias)
@@ -107,7 +134,7 @@ extension AnyDelegateProxy {
 			// As Objective-C classes may cache the information of their delegate at
 			// the time the delegates are set, the information has to be "flushed"
 			// whenever the proxy _forwardee is replaced or a selector is intercepted.
-			let proxy = self.init(lifetime: instance.publishers.lifetime) { [weak instance] proxy in
+			let proxy = self.init(lifetime: instance.lifetime) { [weak instance] proxy in
 				guard let instance = instance else { return }
 				invokeSuperSetter(instance, superclass, setter, proxy)
 			}
@@ -138,12 +165,10 @@ extension AnyDelegateProxy {
 		for instance: Instance,
 		_ delegateKeyPath: WritableKeyPath<Instance, Delegate?>
 	) -> Self {
-		let selector = _unsafeMakePropertySelector(delegateKeyPath)
 		return proxy(
 			for: instance,
 			protocol: Delegate.self,
-			setter: selector.setter,
-			getter: selector.getter
+			selector: _unsafeMakePropertySelector(delegateKeyPath)
 		) as! Self
 	}
 }

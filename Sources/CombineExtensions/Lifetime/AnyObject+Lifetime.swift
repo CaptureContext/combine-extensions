@@ -1,16 +1,17 @@
+#if canImport(Combine)
 import CombineInterception
 import _InterceptionUtils
 
 /// Holds the `Lifetime` of the object.
-private let isSwizzledKey = AssociationKey<Bool>(default: false)
+nonisolated(unsafe) private let isSwizzledKey = AssociationKey<Bool>(default: false)
 
 /// Holds the `Lifetime` of the object.
-private let lifetimeKey = AssociationKey<Lifetime?>(default: nil)
+nonisolated(unsafe) private let lifetimeKey = AssociationKey<Lifetime?>(default: nil)
 
 /// Holds the `Lifetime.Token` of the object.
-private let lifetimeTokenKey = AssociationKey<Lifetime.Token?>(default: nil)
+nonisolated(unsafe) private let lifetimeTokenKey = AssociationKey<Lifetime.Token?>(default: nil)
 
-public extension Lifetime {
+extension Lifetime {
 	/// Retrive the associated lifetime of given object.
 	/// The lifetime ends when the given object is deinitialized.
 	///
@@ -18,7 +19,7 @@ public extension Lifetime {
 	///   - object: The object for which the lifetime is obtained.
 	///
 	/// - returns: The lifetime ends when the given object is deinitialized.
-	static func of(_ object: AnyObject) -> Lifetime {
+	public static func of(_ object: AnyObject) -> Lifetime {
 		if let object = object as? NSObject {
 			return .of(object)
 		}
@@ -46,7 +47,7 @@ public extension Lifetime {
 	///   - object: The object for which the lifetime is obtained.
 	///
 	/// - returns: The lifetime ends when the given object is deinitialized.
-	static func of(_ object: NSObject) -> Lifetime {
+	public static func of(_ object: NSObject) -> Lifetime {
 		return synchronized(object) {
 			if let lifetime = object.associations.value(forKey: lifetimeKey) {
 				return lifetime
@@ -121,8 +122,18 @@ public extension Lifetime {
 }
 
 extension PublishersProxy where Base: AnyObject {
+	@available(*, deprecated, message: "Use `object.lifetime` instead of `object.publishers.lifetime`")
 	/// Returns a lifetime that ends when the object is deallocated.
 	@nonobjc public var lifetime: Lifetime {
 		return .of(base)
 	}
 }
+
+public protocol _LifetimeProvider: AnyObject {}
+
+extension _LifetimeProvider {
+	public var lifetime: Lifetime { .of(self) }
+}
+
+extension NSObject: _LifetimeProvider {}
+#endif

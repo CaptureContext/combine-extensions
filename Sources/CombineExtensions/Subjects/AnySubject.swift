@@ -2,42 +2,67 @@
 import Combine
 import Foundation
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-extension Subject {
-	public func eraseToAnySubject() -> AnySubject<Output, Failure> {
-		return AnySubject(self)
+/// Witness type for `any Subject<Output, Failure>` protocol
+public class AnySubject<Output, Failure: Error>: Subject {
+	@usableFromInline
+	internal let underlyingSubject: any Subject<Output, Failure>
+
+	public init<S: Subject>(_ subject: S) where S.Output == Output, S.Failure == Failure {
+		self.underlyingSubject = subject
+	}
+
+	@inlinable
+	public func send(_ value: Output) {
+		underlyingSubject.send(value)
+	}
+
+	@inlinable
+	public func send(subscription: Subscription) {
+		underlyingSubject.send(subscription: subscription)
+	}
+
+	@inlinable
+	public func send(completion: Subscribers.Completion<Failure>) {
+		underlyingSubject.send(completion: completion)
+	}
+
+	@inlinable
+	public func receive<S>(subscriber: S)
+	where S: Subscriber, Failure == S.Failure, Output == S.Input {
+		underlyingSubject.receive(subscriber: subscriber)
 	}
 }
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public class AnySubject<Output, Failure: Error>: Subject {
-	public init<S: Subject>(_ subject: S) where S.Output == Output, S.Failure == Failure {
-		self._sendValue = subject.send
-		self._sendSubscription = subject.send(subscription:)
-		self._sendCompletion = subject.send(completion:)
-		self._receiveSubscriber = subject.receive(subscriber:)
+extension AnySubject {
+	/// Creates an instance with an underlying PublishSubject
+	@inlinable
+	public static func publish() -> AnySubject {
+		.init(PublishSubject())
 	}
-	
-	let _sendValue: (Output) -> Void
-	let _sendSubscription: (Subscription) -> Void
-	let _sendCompletion: (Subscribers.Completion<Failure>) -> Void
-	let _receiveSubscriber: (AnySubscriber<Output, Failure>) -> Void
-	
-	public func send(_ value: Output) {
-		_sendValue(value)
+
+	/// Creates an instance with an underlying PublishSubject with initial value
+	@inlinable
+	public static func publish(_ initialValue: Output) -> AnySubject {
+		.init(PublishSubject(initialValue))
 	}
-	
-	public func send(subscription: Subscription) {
-		_sendSubscription(subscription)
+
+	/// Creates an instance with an underlying PassthroughSubject
+	@inlinable
+	public static func passthrough() -> AnySubject {
+		.init(PassthroughSubject())
 	}
-	
-	public func send(completion: Subscribers.Completion<Failure>) {
-		_sendCompletion(completion)
+
+	/// Creates an instance with an underlying CurrentValueSubject
+	@inlinable
+	public static func currentValue(_ initialValue: Output) -> AnySubject {
+		.init(CurrentValueSubject(initialValue))
 	}
-	
-	public func receive<S>(subscriber: S)
-	where S: Subscriber, Failure == S.Failure, Output == S.Input {
-		_receiveSubscriber(subscriber.eraseToAnySubscriber())
+}
+
+extension Subject {
+	/// Erases the instance to AnySubject
+	public func eraseToAnySubject() -> AnySubject<Output, Failure> {
+		return AnySubject(self)
 	}
 }
 #endif

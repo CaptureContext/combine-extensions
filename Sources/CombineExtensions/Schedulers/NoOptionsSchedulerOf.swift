@@ -3,12 +3,10 @@ import Combine
 import Foundation
 import CombineSchedulers
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 public typealias NoOptionsSchedulerOf<Scheduler> = CombineSchedulers.AnyScheduler<
 	Scheduler.SchedulerTimeType, Never
 > where Scheduler: Combine.Scheduler
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension Scheduler {
 	public func ignoreOptions() -> NoOptionsSchedulerOf<Self> {
 		AnyScheduler<SchedulerTimeType, Never>(

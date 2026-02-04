@@ -2,28 +2,33 @@
 import Combine
 import Foundation
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+/// Subjectt that is not a Publisher
 public struct SubjectProxy<Output, Failure: Error> {
+	@usableFromInline
+	internal let underlyingSubject: any Subject<Output, Failure>
+
 	public init<S: Subject>(_ subject: S) where S.Output == Output, S.Failure == Failure {
-		self._sendValue = subject.send
-		self._sendSubscription = subject.send(subscription:)
-		self._sendCompletion = subject.send(completion:)
+		self.underlyingSubject = subject
 	}
-	
-	let _sendValue: (Output) -> Void
-	let _sendSubscription: (Subscription) -> Void
-	let _sendCompletion: (Subscribers.Completion<Failure>) -> Void
-	
+
+	@inlinable
 	public func send(_ value: Output) {
-		_sendValue(value)
+		underlyingSubject.send(value)
 	}
-	
+
+	@inlinable
 	public func send(subscription: Subscription) {
-		_sendSubscription(subscription)
+		underlyingSubject.send(subscription: subscription)
 	}
-	
+
+	@inlinable
 	public func send(completion: Subscribers.Completion<Failure>) {
-		_sendCompletion(completion)
+		underlyingSubject.send(completion: completion)
+	}
+
+	@_spi(Internals)
+	public func eraseToAnySubject() -> AnySubject<Output, Failure> {
+		.init(self.underlyingSubject)
 	}
 }
 #endif

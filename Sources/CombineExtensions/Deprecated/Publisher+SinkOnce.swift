@@ -1,17 +1,21 @@
 #if canImport(Combine)
 import Combine
 import Foundation
+import ConcurrencyExtras
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 private enum DiscardableSinkStorage {
 	private static let accessQueue = DispatchQueue(
 		label: "DiscardableSinkStorage.accessQueue",
 		qos: .default
 	)
 
+	// Synced on accessQueue
+	nonisolated(unsafe)
 	static var cancellables: [AnyHashable: Cancellable] = [:]
 
-	static func capture(_ innerCancellable: (Cancellable) -> Cancellable) -> Cancellable {
+	static func capture(
+		_ innerCancellable: (Cancellable) -> Cancellable
+	) -> Cancellable {
 		struct CancellationID: Hashable {}
 		let cancellationID = CancellationID()
 
@@ -35,8 +39,8 @@ private enum DiscardableSinkStorage {
 	}
 }
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Publisher {
+	@available(*, deprecated, message: "Use `sink` with proper cancellation storage")
 	@discardableResult
 	public func sinkOnce(
 		onValue: ((Output) -> Void)? = nil,
