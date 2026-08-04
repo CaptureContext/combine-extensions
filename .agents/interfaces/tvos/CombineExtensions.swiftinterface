@@ -1,0 +1,551 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)
+// swift-module-flags: -target arm64-apple-tvos13.0-simulator -enable-objc-interop -swift-version 6 -Onone -module-name CombineExtensions -package-name combine_extensions
+// swift-module-flags-ignorable:  -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3.3
+@_exported import Combine
+@_exported import CombineInterception
+@_exported import CombineSchedulers
+import ConcurrencyExtras
+import Foundation
+import Swift
+import _Concurrency
+import _InterceptionUtils
+import _StringProcessing
+import _SwiftConcurrencyShims
+extension Combine.Cancellable {
+  @inlinable public func eraseToAnyCancellable() -> Combine.AnyCancellable {
+		return AnyCancellable(self)
+	}
+}
+public class NonScopedCancellable : Combine.Cancellable {
+  @inlinable convenience public init(_ cancellable: any Combine.Cancellable) {
+		self.init(cancellable.cancel)
+	}
+  public init(_ action: @escaping () -> Swift.Void)
+  @usableFromInline
+  final internal let _action: () -> Swift.Void
+  @inlinable public func cancel() { _action() }
+  @objc deinit
+}
+@objc open class AnyDelegateProxy : ObjectiveC.NSObject {
+  @_hasStorage @_hasInitialValue weak public var _forwardee: (any ObjectiveC.NSObjectProtocol)? {
+    get
+    set
+  }
+  @_hasStorage @_hasInitialValue public var interceptedSelectors: Swift.Set<ObjectiveC.Selector> {
+    get
+  }
+  final private let lifetime: CombineExtensions.Lifetime
+  final private let originalSetter: (Swift.AnyObject) -> Swift.Void
+  required public init(lifetime: CombineExtensions.Lifetime, _ originalSetter: @escaping (Swift.AnyObject) -> Swift.Void)
+  @objc override dynamic public func forwardingTarget(for selector: ObjectiveC.Selector!) -> Any?
+  public func proxy_intercept(_ selector: ObjectiveC.Selector) -> some Combine.Publisher<Interception.InterceptionResult<Any, Any>, Swift.Never>
+  
+  public func proxy_intercept<Args, Output>(_ selector: _InterceptionCustomSelectors._MethodSelector<Args, Output>) -> some Combine.Publisher<Interception.InterceptionResult<Args, Output>, Swift.Never>
+  
+  @objc override dynamic public func responds(to selector: ObjectiveC.Selector!) -> Swift.Bool
+  @objc deinit
+}
+extension CombineExtensions.AnyDelegateProxy {
+  public static func proxy<Delegate>(for instance: ObjectiveC.NSObject, protocol: Delegate.Type, selector: any _InterceptionCustomSelectors._MutablePropertySelectorProtocol) -> CombineExtensions.AnyDelegateProxy where Delegate : ObjectiveC.NSObjectProtocol
+  @available(*, deprecated, renamed: "proxy(for:protocol:selector:)")
+  public static func proxy<Delegate>(for instance: ObjectiveC.NSObject, protocol: Delegate.Type, setter: ObjectiveC.Selector, getter: ObjectiveC.Selector) -> CombineExtensions.AnyDelegateProxy where Delegate : ObjectiveC.NSObjectProtocol
+}
+extension CombineExtensions.AnyDelegateProxy {
+  public static func proxy<Instance, Delegate>(for instance: Instance, _ delegateKeyPath: Swift.WritableKeyPath<Instance, Delegate?>) -> Self where Instance : ObjectiveC.NSObject, Delegate : ObjectiveC.NSObjectProtocol
+}
+public protocol DelegateProxyType<Delegate> : CombineExtensions.AnyDelegateProxy {
+  associatedtype Delegate : ObjectiveC.NSObjectProtocol
+  var asDelegate: Self.Delegate { get }
+  var forwardee: Self.Delegate? { get set }
+}
+extension CombineExtensions.DelegateProxyType {
+  public var asDelegate: Self.Delegate {
+    get
+  }
+  public var forwardee: Self.Delegate? {
+    get
+    set
+  }
+}
+@_inheritsConvenienceInitializers open class DelegateProxy<Delegate> : CombineExtensions.AnyDelegateProxy, CombineExtensions.DelegateProxyType where Delegate : ObjectiveC.NSObjectProtocol {
+  required public init(lifetime: CombineExtensions.Lifetime, _ originalSetter: @escaping (Swift.AnyObject) -> Swift.Void)
+  @objc deinit
+}
+extension CombineExtensions.PublishSubject {
+  @available(*, deprecated, message: "Use cancellation tracking subscribers instead")
+  public func onCancel(perform action: (() -> Swift.Void)?)
+}
+extension CombineExtensions.OpenPublishSubject {
+  @available(*, deprecated, renamed: "Output")
+  public typealias Value = Output
+}
+extension Combine.Publisher {
+  @available(*, deprecated, message: "Use `sink` with proper cancellation storage")
+  @discardableResult
+  public func sinkOnce(onValue: ((Self.Output) -> Swift.Void)? = nil, onFailure: ((Self.Failure) -> Swift.Void)? = nil, onFinished: (() -> Swift.Void)? = nil) -> any Combine.Cancellable
+}
+extension CombineExtensions.Lifetime {
+  public static func of(_ object: Swift.AnyObject) -> CombineExtensions.Lifetime
+  public static func of(_ object: ObjectiveC.NSObject) -> CombineExtensions.Lifetime
+}
+extension CombineExtensions.PublishersProxy where Base : AnyObject {
+  @available(*, deprecated, message: "Use `object.lifetime` instead of `object.publishers.lifetime`")
+  @nonobjc public var lifetime: CombineExtensions.Lifetime {
+    get
+  }
+}
+public protocol _LifetimeProvider : AnyObject {
+}
+extension CombineExtensions._LifetimeProvider {
+  public var lifetime: CombineExtensions.Lifetime {
+    get
+  }
+}
+extension ObjectiveC.NSObject : CombineExtensions._LifetimeProvider {
+}
+final public class Lifetime : CombineExtensions.PublishersProxyProvider {
+  @_hasInitialValue final fileprivate var cancellables: Swift.Set<Combine.AnyCancellable>
+  @_hasInitialValue final fileprivate let _invalidationSubject: Combine.PassthroughSubject<Swift.Never, Swift.Never>
+  @_hasInitialValue final fileprivate let _hasEndedSubject: Combine.CurrentValueSubject<Swift.Bool, Swift.Never>
+  final public var hasEnded: Swift.Bool {
+    get
+  }
+  public init(_ token: CombineExtensions.Lifetime.Token?)
+  @objc deinit
+}
+extension CombineExtensions.Lifetime {
+  public static func make() -> (lifetime: CombineExtensions.Lifetime, token: CombineExtensions.Lifetime.Token)
+  @_hasInitialValue nonisolated(unsafe) public static let empty: CombineExtensions.Lifetime
+}
+extension CombineExtensions.Lifetime {
+  final public class Token : Combine.Cancellable {
+    @_hasInitialValue final private var _invalidationPublisher: CombineExtensions.PublishSubject<Swift.Never, Swift.Never>
+    @_hasInitialValue final private var _isInvalidatedPublisher: CombineExtensions.PublishSubject<Swift.Bool, Swift.Never>
+    public init()
+    final public func cancel()
+    @objc deinit
+  }
+}
+extension Combine.Publisher {
+  public func limited(to lifetime: CombineExtensions.Lifetime) -> some Combine.Publisher<Self.Output, Self.Failure>
+  
+}
+extension CombineExtensions.PublishersProxy where Base == CombineExtensions.Lifetime {
+  public var invalidation: some Combine.Publisher<Swift.Never, Swift.Never> {
+    get
+  }
+  public var hasEnded: some Combine.Publisher<Swift.Bool, Swift.Never> {
+    get
+  }
+}
+extension CombineExtensions.Lifetime {
+  @available(*, deprecated, message: "Use `lifetime.publishers.invalidation` instead of `lifetime.publisher`")
+  final public var publisher: Combine.AnyPublisher<Swift.Never, Swift.Never> {
+    get
+  }
+  @available(*, deprecated, message: "Use `lifetime.publishers.hasEnded` instead of `lifetime.hasEndedPublisher`")
+  final public var hasEndedPublisher: some Combine.Publisher<Swift.Bool, Swift.Never> {
+    get
+  }
+}
+public typealias PublisherOf<P> = Combine.Publisher<P.Output, P.Failure> where P : Combine.Publisher
+extension Combine.Publisher {
+  @inlinable public func combinePrevious() -> some Combine.Publisher<(prev: Swift.Optional<Self.Output>, next: Self.Output), Self.Failure> {
+		scan(Optional<(Output?, Output)>.none) { ($0?.1, $1) }
+			.compactMap { $0 }
+	}
+  
+  @inlinable public func combinePrevious(initialValue: Self.Output) -> some Combine.Publisher<(prev: Self.Output, next: Self.Output), Self.Failure> {
+		var previous: Output = initialValue
+		return self.map { input in
+			let output = (previous, input)
+			previous = input
+			return output
+		}
+	}
+  
+  @inlinable public func discardOutput<T>() -> some Combine.Publisher<T, Self.Failure> {
+		self.flatMap { _ in Empty<T, Failure>() }
+	}
+  
+  @inlinable public func replaceOutput<T>(with value: T) -> some Combine.Publisher<T, Self.Failure> {
+		self.map { _ in value }
+	}
+  
+  @inlinable public func resend<S>(_ events: Combine.Subscribers.Sink<Self.Output, Self.Failure>.Event.Set = .all, to subject: S) -> any Combine.Cancellable where S : Combine.Subject, Self.Failure == S.Failure, Self.Output == S.Output {
+		sinkEvents { event in
+			guard events.containsTag(event.tag) else { return }
+			subject.send(event: event)
+		}
+	}
+}
+extension Combine.Publisher where Self : Swift.Sendable {
+  @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
+  public func completion() async throws
+}
+extension Combine.Publisher {
+  @inlinable public func eraseError() -> some Combine.Publisher<Self.Output, any Swift.Error> {
+		self.mapError { $0 as Error }
+	}
+  
+  @inlinable public func replaceError(with transform: @escaping (Self.Failure) -> Self.Output) -> some Combine.Publisher<Self.Output, Swift.Never> {
+		self.catch { Just(transform($0)) }
+	}
+  
+  @inlinable public func ignoreError() -> some Combine.Publisher<Self.Output, Swift.Never> {
+		self.catch { _ in Empty() }
+	}
+  
+}
+extension Combine.Publisher {
+  @inlinable public func uncheckedSendable() -> some Combine.Publisher<Self.Output, Self.Failure> & Swift.Sendable {
+		UncheckedSendablePublisher(self)
+	}
+  
+}
+@usableFromInline
+internal struct UncheckedSendablePublisher<P> : Combine.Publisher, @unchecked Swift.Sendable where P : Combine.Publisher {
+  @usableFromInline
+  internal typealias Output = P.Output
+  @usableFromInline
+  internal typealias Failure = P.Failure
+  private let publisher: P
+  @usableFromInline
+  internal init(_ publisher: P)
+  @usableFromInline
+  internal func receive<S>(subscriber: S) where S : Combine.Subscriber, P.Failure == S.Failure, P.Output == S.Input
+}
+extension Combine.Subscribers.Sink {
+  public enum Event {
+    case value(Input)
+    case failure(Failure)
+    case finished
+    public var tag: Combine.Subscribers.Sink<Input, Failure>.Event.Tag {
+      get
+    }
+    public enum Tag : Swift.Hashable {
+      case value
+      case failure
+      case finished
+      @_semantics("derived_enum_equals") @_implements(Swift.Equatable, ==(_:_:)) public static func __derived_enum_equals(_ a: Combine.Subscribers.Sink<Input, Failure>.Event.Tag, _ b: Combine.Subscribers.Sink<Input, Failure>.Event.Tag) -> Swift.Bool
+      public func hash(into hasher: inout Swift.Hasher)
+      public var hashValue: Swift.Int {
+        get
+      }
+    }
+    public struct Set : Swift.OptionSet, Swift.Hashable {
+      public let rawValue: Swift.Int
+      public init(rawValue: Swift.Int)
+      public static var value: Combine.Subscribers.Sink<Input, Failure>.Event.Set {
+        get
+      }
+      public static var failure: Combine.Subscribers.Sink<Input, Failure>.Event.Set {
+        get
+      }
+      public static var finished: Combine.Subscribers.Sink<Input, Failure>.Event.Set {
+        get
+      }
+      public static var all: Combine.Subscribers.Sink<Input, Failure>.Event.Set {
+        get
+      }
+      public static var completion: Combine.Subscribers.Sink<Input, Failure>.Event.Set {
+        get
+      }
+      public func containsTag(_ tag: Combine.Subscribers.Sink<Input, Failure>.Event.Tag) -> Swift.Bool
+      @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+      public typealias ArrayLiteralElement = Combine.Subscribers.Sink<Input, Failure>.Event.Set
+      @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+      public typealias Element = Combine.Subscribers.Sink<Input, Failure>.Event.Set
+      @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+      public typealias RawValue = Swift.Int
+    }
+  }
+}
+extension Combine.Publisher {
+  @inlinable public func sinkEvents(_ eventsReceiver: @escaping (Combine.Subscribers.Sink<Self.Output, Self.Failure>.Event) -> Swift.Void) -> Combine.AnyCancellable {
+		return sink(
+			receiveCompletion: { completion in
+				switch completion {
+				case let .failure(error):
+					eventsReceiver(.failure(error))
+				case .finished:
+					eventsReceiver(.finished)
+				}
+			},
+			receiveValue: { output in
+				eventsReceiver(.value(output))
+			}
+		)
+	}
+  @inlinable public func sinkResult(_ resultReceiver: @escaping (Swift.Result<Self.Output, Self.Failure>) -> Swift.Void) -> Combine.AnyCancellable {
+		return sinkEvents { event in
+			switch event {
+			case let .value(value): resultReceiver(.success(value))
+			case let .failure(error): resultReceiver(.failure(error))
+			default: return
+			}
+		}
+	}
+  @inlinable public func sinkCompletion(_ completionReceiver: @escaping (Combine.Subscribers.Completion<Self.Failure>) -> Swift.Void) -> Combine.AnyCancellable {
+		return sinkEvents { event in
+			switch event {
+			case .finished: completionReceiver(.finished)
+			case let .failure(error): completionReceiver(.failure(error))
+			default: return
+			}
+		}
+	}
+}
+extension Combine.Publisher where Self.Failure == Swift.Never {
+  @inlinable public func sinkValues(_ valueReceiver: @escaping (Self.Output) -> Swift.Void) -> Combine.AnyCancellable {
+		return sink(receiveValue: valueReceiver)
+	}
+}
+public protocol PublishersProxyProvider {
+}
+extension CombineExtensions.PublishersProxyProvider {
+  public var publishers: CombineExtensions.PublishersProxy<Self> {
+    get
+  }
+}
+public struct PublishersProxy<Base> {
+  public let base: Base
+  public init(_ base: Base)
+}
+extension ObjectiveC.NSObject : CombineExtensions.PublishersProxyProvider {
+}
+extension Dispatch.DispatchQueue.SchedulerTimeType.Stride {
+  public static func interval(_ value: Foundation.TimeInterval) -> Dispatch.DispatchQueue.SchedulerTimeType.Stride
+}
+public typealias NoOptionsSchedulerOf<Scheduler> = CombineSchedulers.AnyScheduler<Scheduler.SchedulerTimeType, Swift.Never> where Scheduler : Combine.Scheduler
+extension Combine.Scheduler {
+  public func ignoreOptions() -> CombineExtensions.NoOptionsSchedulerOf<Self>
+}
+public class AnySubject<Output, Failure> : Combine.Subject where Failure : Swift.Error {
+  @usableFromInline
+  final internal let underlyingSubject: any Combine.Subject<Output, Failure>
+  public init<S>(_ subject: S) where Output == S.Output, Failure == S.Failure, S : Combine.Subject
+  @inlinable public func send(_ value: Output) {
+		underlyingSubject.send(value)
+	}
+  @inlinable public func send(subscription: any Combine.Subscription) {
+		underlyingSubject.send(subscription: subscription)
+	}
+  @inlinable public func send(completion: Combine.Subscribers.Completion<Failure>) {
+		underlyingSubject.send(completion: completion)
+	}
+  @inlinable public func receive<S>(subscriber: S) where Output == S.Input, Failure == S.Failure, S : Combine.Subscriber {
+		underlyingSubject.receive(subscriber: subscriber)
+	}
+  @objc deinit
+}
+extension CombineExtensions.AnySubject {
+  @inlinable public static func publish() -> CombineExtensions.AnySubject<Output, Failure> {
+		.init(PublishSubject())
+	}
+  @inlinable public static func publish(_ initialValue: Output) -> CombineExtensions.AnySubject<Output, Failure> {
+		.init(PublishSubject(initialValue))
+	}
+  @inlinable public static func passthrough() -> CombineExtensions.AnySubject<Output, Failure> {
+		.init(PassthroughSubject())
+	}
+  @inlinable public static func currentValue(_ initialValue: Output) -> CombineExtensions.AnySubject<Output, Failure> {
+		.init(CurrentValueSubject(initialValue))
+	}
+}
+extension Combine.Subject {
+  public func eraseToAnySubject() -> CombineExtensions.AnySubject<Self.Output, Self.Failure>
+}
+@usableFromInline
+internal class DefaulInnerPublishSubject<Output, Failure> : Combine.Subject where Failure : Swift.Error {
+  @usableFromInline
+  final internal let subject: Combine.CurrentValueSubject<Output?, Failure>
+  @usableFromInline
+  internal init(_ initialValue: Output? = nil)
+  @usableFromInline
+  internal func send(_ value: Output)
+  @usableFromInline
+  internal func send(completion: Combine.Subscribers.Completion<Failure>)
+  @usableFromInline
+  internal func send(subscription: any Combine.Subscription)
+  @usableFromInline
+  internal func receive<S>(subscriber: S) where Output == S.Input, Failure == S.Failure, S : Combine.Subscriber
+  @objc @usableFromInline
+  deinit
+}
+public protocol _PublishSubjectProtocol : Combine.Subject {
+  @available(*, deprecated, message: "Use cancellation tracking subscribers instead")
+  func onCancel(perform action: (() -> Swift.Void)?)
+  init<S>(_ subject: S) where S : Combine.Subject, Self.Failure == S.Failure, Self.Output == S.Output
+}
+@propertyWrapper public class PublishSubject<Output, Failure> : CombineExtensions._PublishSubjectProtocol where Failure : Swift.Error {
+  @usableFromInline
+  final internal let subject: any Combine.Subject<Output, Failure>
+  @usableFromInline
+  @_hasInitialValue internal var _onCancel_DEPRECATED: (() -> Swift.Void)?
+  required public init<S>(_ subject: S) where Output == S.Output, Failure == S.Failure, S : Combine.Subject
+  @inlinable convenience public init(_ initialValue: Output) {
+		self.init(DefaulInnerPublishSubject(initialValue))
+	}
+  @inlinable convenience public init() {
+		self.init(DefaulInnerPublishSubject())
+	}
+  @inlinable public var wrappedValue: Combine.AnyPublisher<Output, Failure> {
+    get {
+		subject.eraseToAnyPublisher()
+	}
+  }
+  @objc deinit
+}
+@_inheritsConvenienceInitializers @propertyWrapper final public class OpenPublishSubject<Output, Failure> : CombineExtensions.PublishSubject<Output, Failure> where Failure : Swift.Error {
+  @inlinable override final public var wrappedValue: Combine.AnyPublisher<Output, Failure> {
+    get { super.wrappedValue }
+  }
+  @inlinable final public var projectedValue: CombineExtensions.SubjectProxy<Output, Failure> {
+    get { .init(self) }
+  }
+  required public init<S>(_ subject: S) where Output == S.Output, Failure == S.Failure, S : Combine.Subject
+  @objc deinit
+}
+extension CombineExtensions.PublishSubject : Combine.Subject {
+  @inlinable final public func send(_ value: Output) {
+		subject.send(value)
+	}
+  @inlinable final public func send(subscription: any Combine.Subscription) {
+		subject.send(
+			subscription: subscription.cancellationTracking { [weak self] in
+				self?._onCancel_DEPRECATED?()
+			}
+		)
+	}
+  @inlinable final public func send(completion: Combine.Subscribers.Completion<Failure>) {
+		subject.send(completion: completion)
+	}
+}
+extension CombineExtensions.PublishSubject : Combine.Publisher {
+  @inlinable public func receive<S>(subscriber: S) where Output == S.Input, Failure == S.Failure, S : Combine.Subscriber {
+		subject.receive(
+			subscriber: subscriber.cancellationTracking { [weak self] in
+				self?._onCancel_DEPRECATED?()
+			}
+		)
+	}
+}
+extension CombineExtensions._PublishSubjectProtocol {
+  @inlinable public init() {
+		self.init(DefaulInnerPublishSubject())
+	}
+  @inlinable public init<S>(_ subject: S, handler: (Self) -> Swift.Void) where S : Combine.Subject, Self.Failure == S.Failure, Self.Output == S.Output {
+		self.init(subject)
+		handler(self)
+	}
+  @inlinable public init(handler: (Self) -> Swift.Void) {
+		self.init()
+		handler(self)
+	}
+}
+extension Combine.Subject {
+  @inlinable public func send(completion: CombineExtensions.SubjectValueCompletion<Self.Output>) {
+		send(completion.output)
+		send(completion: .finished)
+	}
+  public func send(event: Combine.Subscribers.Sink<Self.Output, Self.Failure>.Event)
+}
+public struct SubjectValueCompletion<Output> {
+  @usableFromInline
+  internal var output: Output
+  @usableFromInline
+  internal init(_ output: Output)
+  @inlinable public static func value(_ output: Output) -> CombineExtensions.SubjectValueCompletion<Output> {
+		return SubjectValueCompletion(output)
+	}
+}
+public struct SubjectProxy<Output, Failure> where Failure : Swift.Error {
+  @usableFromInline
+  internal let underlyingSubject: any Combine.Subject<Output, Failure>
+  public init<S>(_ subject: S) where Output == S.Output, Failure == S.Failure, S : Combine.Subject
+  @inlinable public func send(_ value: Output) {
+		underlyingSubject.send(value)
+	}
+  @inlinable public func send(subscription: any Combine.Subscription) {
+		underlyingSubject.send(subscription: subscription)
+	}
+  @inlinable public func send(completion: Combine.Subscribers.Completion<Failure>) {
+		underlyingSubject.send(completion: completion)
+	}
+}
+public struct AnySubscriber<Input, Failure> : Combine.Subscriber where Failure : Swift.Error {
+  @usableFromInline
+  internal let underlyingSubscriber: any Combine.Subscriber<Input, Failure>
+  public init<S>(_ subscriber: S) where Input == S.Input, Failure == S.Failure, S : Combine.Subscriber
+  @inlinable public var combineIdentifier: Combine.CombineIdentifier {
+    get {
+		underlyingSubscriber.combineIdentifier
+	}
+  }
+  @inlinable public func receive(subscription: any Combine.Subscription) {
+		underlyingSubscriber.receive(subscription: subscription)
+	}
+  @inlinable public func receive(_ input: Input) -> Combine.Subscribers.Demand {
+		underlyingSubscriber.receive(input)
+	}
+  @inlinable public func receive(completion: Combine.Subscribers.Completion<Failure>) {
+		underlyingSubscriber.receive(completion: completion)
+	}
+}
+extension Combine.Subscriber {
+  @inlinable public func eraseToAnySubscriber() -> CombineExtensions.AnySubscriber<Self.Input, Self.Failure> {
+		return AnySubscriber(self)
+	}
+}
+@available(*, deprecated, renamed: "CancellationTrackingSubscriber")
+public typealias CancelTrackingSubscriber = CombineExtensions.CancellationTrackingSubscriber
+public struct CancellationTrackingSubscriber<InnerSubscriber> : Combine.Subscriber where InnerSubscriber : Combine.Subscriber {
+  @usableFromInline
+  internal let subscriber: InnerSubscriber
+  @usableFromInline
+  internal let onCancel: () -> Swift.Void
+  public init(_ subscriber: InnerSubscriber, onCancel: @escaping () -> Swift.Void)
+  @inlinable public var combineIdentifier: Combine.CombineIdentifier {
+    get {
+		subscriber.combineIdentifier
+	}
+  }
+  @inlinable public func receive(subscription: any Combine.Subscription) {
+		subscriber.receive(subscription: subscription.cancellationTracking(onCancel))
+	}
+  @inlinable public func receive(_ input: InnerSubscriber.Input) -> Combine.Subscribers.Demand {
+		subscriber.receive(input)
+	}
+  @inlinable public func receive(completion: Combine.Subscribers.Completion<InnerSubscriber.Failure>) {
+		subscriber.receive(completion: completion)
+	}
+  public typealias Failure = InnerSubscriber.Failure
+  public typealias Input = InnerSubscriber.Input
+}
+extension Combine.Subscriber {
+  @inlinable public func cancellationTracking(_ action: @escaping () -> Swift.Void) -> CombineExtensions.CancellationTrackingSubscriber<Self> {
+		return CancellationTrackingSubscriber(self, onCancel: action)
+	}
+}
+public struct CancellationTrackingSubscription : Combine.Subscription {
+  @_hasInitialValue public let combineIdentifier: Combine.CombineIdentifier
+  @usableFromInline
+  internal let subscription: any Combine.Subscription
+  @usableFromInline
+  internal let onCancel: () -> Swift.Void
+  public init(_ subscription: any Combine.Subscription, onCancel: @escaping () -> Swift.Void)
+  @inlinable public func request(_ demand: Combine.Subscribers.Demand) {
+		subscription.request(demand)
+	}
+  @inlinable public func cancel() {
+		subscription.cancel()
+		onCancel()
+	}
+}
+extension Combine.Subscription {
+  @inlinable public func cancellationTracking(_ action: @escaping () -> Swift.Void) -> any Combine.Subscription {
+		return CancellationTrackingSubscription(self, onCancel: action)
+	}
+}
