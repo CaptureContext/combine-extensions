@@ -26,15 +26,15 @@ let package = Package(
 	dependencies: [
 		.package(
 			url: "https://github.com/capturecontext/combine-interception.git",
-			.upToNextMajor(from: "0.4.0")
+			.upToNextMinor(from: "0.4.3")
 		),
 		.package(
 			url: "https://github.com/pointfreeco/combine-schedulers.git",
-			.upToNextMajor(from: "1.0.0")
+			.upToNextMajor(from: "1.2.2")
 		),
 		.package(
 			url: "https://github.com/pointfreeco/swift-concurrency-extras.git",
-			.upToNextMajor(from: "1.0.0")
+			.upToNextMajor(from: "1.4.1")
 		),
 	],
 	targets: [
